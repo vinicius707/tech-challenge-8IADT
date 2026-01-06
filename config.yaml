@@ -1,8 +1,12 @@
 data:
   tabular_path: "data/tabular/breast-cancer.csv"
+  images:
+    pneumonia_path: "data/images/pneumonia"
+    breast_cancer_path: "data/images/breast_cancer"
 
 split:
   test_size: 0.2
+  validation_size: 0.2
   random_state: 42
 
 models:
@@ -11,4 +15,11 @@ models:
   random_forest:
     n_estimators: 100
     max_depth: 10
-
+  cnn:
+    image_size:
+      pneumonia: [224, 224]
+      breast_cancer: [256, 256]
+    batch_size: 32
+    epochs: 50
+    learning_rate: 0.001
+    early_stopping_patience: 5

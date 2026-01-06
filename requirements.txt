@@ -8,3 +8,6 @@ shap
 jupyter
 tensorflow
 opencv-python
+kagglehub
+pillow
+scikit-image
