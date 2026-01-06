@@ -10,7 +10,9 @@ Este projeto implementa modelos de machine learning para **classificação de ex
 
 ## 📌 Problema Abordado
 
-### Classificação de Câncer de Mama
+Este projeto aborda dois tipos de classificação médica:
+
+### 1. Classificação de Câncer de Mama (Dados Tabulares)
 
 Classificação binária para diagnóstico de **câncer de mama** em duas categorias:
 
@@ -19,9 +21,27 @@ Classificação binária para diagnóstico de **câncer de mama** em duas catego
 
 O modelo utiliza características clínicas numéricas obtidas de exames médicos (raio, textura, perímetro, área, suavidade, compactação, concavidade, etc.) para fazer predições.
 
+### 2. Classificação de Imagens Médicas (CNNs)
+
+#### 2.1 Pneumonia em Raio-X
+
+Classificação binária de imagens de raio-X de tórax:
+
+- **Normal**: Sem sinais de pneumonia
+- **Pneumonia**: Com sinais de pneumonia
+
+#### 2.2 Câncer de Mama em Mamografias
+
+Classificação binária de imagens de mamografia:
+
+- **Benigno**: Lesões benignas
+- **Maligno**: Lesões malignas (câncer)
+
 ---
 
-## 🧪 Dataset Utilizado
+## 🧪 Datasets Utilizados
+
+### Dados Tabulares
 
 - **Dataset**: Wisconsin Breast Cancer Dataset
 - **Fonte**: UCI Machine Learning Repository
@@ -29,6 +49,24 @@ O modelo utiliza características clínicas numéricas obtidas de exames médico
 - **Features**: 30 características numéricas
 - **Distribuição**: ~62% benigno, ~38% maligno
 - **Localização**: `data/tabular/breast-cancer.csv`
+
+### Dados de Imagens
+
+#### Pneumonia em Raio-X
+
+- **Dataset**: Chest X-Ray Images (Pneumonia)
+- **Fonte**: Kaggle (paultimothymooney/chest-xray-pneumonia)
+- **Tipo**: Imagens de raio-X de tórax
+- **Classes**: Normal, Pneumonia
+- **Download**: Automático via kagglehub
+
+#### Câncer de Mama (CBIS-DDSM)
+
+- **Dataset**: CBIS-DDSM (Curated Breast Imaging Subset of DDSM)
+- **Fonte**: Kaggle (awsaf49/cbis-ddsm-breast-cancer-image-dataset)
+- **Tipo**: Imagens de mamografia
+- **Classes**: Benigno, Maligno
+- **Download**: Automático via kagglehub
 
 ### Características do Dataset
 
@@ -54,22 +92,36 @@ Cada feature possui três versões: `_mean` (média), `_se` (erro padrão), `_wo
 ```
 tech-challenge-8IADT/
 ├── data/
-│   └── tabular/
-│       └── breast-cancer.csv          # Dataset principal
+│   ├── tabular/
+│   │   └── breast-cancer.csv          # Dataset tabular
+│   └── images/
+│       ├── pneumonia/                  # Dataset de pneumonia (baixado)
+│       └── breast_cancer/             # Dataset de câncer de mama (baixado)
 ├── notebooks/
-│   ├── 01_tabular_exploracao.ipynb   # Análise exploratória de dados
-│   └── 02_tabular_modelagem.ipynb    # Modelagem e avaliação
+│   ├── 01_tabular_exploracao.ipynb   # EDA dados tabulares
+│   ├── 02_tabular_modelagem.ipynb    # Modelagem dados tabulares
+│   ├── 03_vision_pneumonia_exploracao.ipynb   # EDA pneumonia
+│   ├── 04_vision_pneumonia_modelagem.ipynb    # CNN pneumonia
+│   ├── 05_vision_breast_exploracao.ipynb      # EDA câncer de mama
+│   └── 06_vision_breast_modelagem.ipynb       # CNN câncer de mama
 ├── src/
-│   └── tabular/
-│       ├── processing.py              # Funções de pré-processamento
-│       └── evaluate.py                # Funções de avaliação
+│   ├── tabular/
+│   │   ├── processing.py              # Pré-processamento tabular
+│   │   └── evaluate.py                # Avaliação tabular
+│   └── vision/
+│       ├── data_loader.py             # Carregamento de imagens
+│       ├── preprocessing.py           # Pré-processamento de imagens
+│       ├── models.py                  # Arquiteturas CNN
+│       └── evaluation.py              # Avaliação e Grad-CAM
 ├── models/
-│   └── maternal_risk_model.pkl        # Modelo treinado salvo
-├── config.yaml                        # Configurações do projeto
-├── requirements.txt                   # Dependências Python
+│   ├── maternal_risk_model.pkl       # Modelo tabular
+│   ├── pneumonia_cnn_model.h5        # CNN pneumonia
+│   └── breast_cancer_cnn_model.h5     # CNN câncer de mama
+├── config.yaml                        # Configurações
+├── requirements.txt                   # Dependências
 ├── Dockerfile                         # Containerização
 ├── README.md                          # Este arquivo
-└── relatorio_tecnico.md               # Relatório técnico completo
+└── relatorio_tecnico.md               # Relatório técnico
 ```
 
 ---
@@ -99,19 +151,25 @@ pip install -r requirements.txt
 - `pandas`: Manipulação de dados
 - `numpy`: Computação numérica
 - `scikit-learn`: Machine learning
+- `tensorflow`: Deep learning e CNNs
 - `matplotlib` e `seaborn`: Visualização
 - `shap`: Interpretabilidade de modelos
+- `kagglehub`: Download de datasets do Kaggle
+- `pillow`, `scikit-image`: Processamento de imagens
 - `jupyter`: Notebooks interativos
 
-### Passo 3: Verificar Dataset
+### Passo 3: Verificar Datasets
 
-Certifique-se de que o arquivo `data/tabular/breast-cancer.csv` está presente no diretório.
+- **Dados Tabulares**: Certifique-se de que o arquivo `data/tabular/breast-cancer.csv` está presente
+- **Dados de Imagens**: Os datasets serão baixados automaticamente ao executar os notebooks de exploração
 
 ---
 
 ## 📊 Uso do Projeto
 
-### Executar Análise Exploratória
+### Dados Tabulares
+
+#### Executar Análise Exploratória
 
 1. Abra o Jupyter Notebook:
 
@@ -124,7 +182,7 @@ jupyter notebook notebooks/01_tabular_exploracao.ipynb
    - Visualizar distribuições
    - Analisar correlações entre variáveis
 
-### Executar Modelagem
+#### Executar Modelagem
 
 1. Abra o notebook de modelagem:
 
@@ -137,6 +195,52 @@ jupyter notebook notebooks/02_tabular_modelagem.ipynb
    - Avaliar desempenho
    - Analisar feature importance e SHAP
    - Salvar o melhor modelo
+
+### Classificação de Imagens (CNNs)
+
+#### Pneumonia em Raio-X
+
+1. **Exploração**:
+
+```bash
+jupyter notebook notebooks/03_vision_pneumonia_exploracao.ipynb
+```
+
+- Download automático do dataset
+- Análise da estrutura e distribuição
+- Visualização de amostras
+
+2. **Modelagem**:
+
+```bash
+jupyter notebook notebooks/04_vision_pneumonia_modelagem.ipynb
+```
+
+- Treinamento de CNN
+- Avaliação com métricas completas
+- Interpretabilidade com Grad-CAM
+
+#### Câncer de Mama em Mamografias
+
+1. **Exploração**:
+
+```bash
+jupyter notebook notebooks/05_vision_breast_exploracao.ipynb
+```
+
+- Download automático do dataset CBIS-DDSM
+- Análise da estrutura
+- Visualização de amostras
+
+2. **Modelagem**:
+
+```bash
+jupyter notebook notebooks/06_vision_breast_modelagem.ipynb
+```
+
+- Treinamento de CNN (adaptada para escala de cinza)
+- Avaliação completa
+- Grad-CAM para interpretabilidade
 
 ### Usar Modelo Treinado
 
@@ -164,7 +268,7 @@ print(f"Diagnóstico predito: {prediction[0]}")
 
 ## 📈 Resultados Esperados
 
-### Desempenho dos Modelos
+### Dados Tabulares
 
 #### Regressão Logística
 
@@ -180,7 +284,23 @@ print(f"Diagnóstico predito: {prediction[0]}")
 - **Recall (M)**: ~92.9%
 - **F1-Score (M)**: ~96.3%
 
-### Features Mais Importantes
+### Classificação de Imagens (CNNs)
+
+#### Pneumonia em Raio-X
+
+- **Modelo**: CNN construída do zero
+- **Arquitetura**: 4 blocos convolucionais + camadas densas
+- **Input**: Imagens RGB 224x224
+- **Métricas Esperadas**: Accuracy > 80% (benchmark para CNNs simples)
+
+#### Câncer de Mama em Mamografias
+
+- **Modelo**: CNN adaptada para escala de cinza
+- **Arquitetura**: 5 blocos convolucionais + camadas densas
+- **Input**: Imagens em escala de cinza 256x256
+- **Métricas Esperadas**: Accuracy > 80%
+
+### Features Mais Importantes (Dados Tabulares)
 
 As características mais preditivas identificadas:
 
@@ -194,13 +314,20 @@ As características mais preditivas identificadas:
 
 ## 🔍 Interpretabilidade
 
-O projeto implementa duas técnicas de interpretabilidade:
+### Dados Tabulares
 
 1. **Feature Importance**: Importância global das features (Random Forest)
 2. **SHAP Values**:
    - Interpretabilidade local (por predição)
    - Interpretabilidade global (visão geral)
    - Waterfall plots para casos específicos
+
+### Classificação de Imagens
+
+1. **Grad-CAM**: Visualização das regiões da imagem que mais influenciam a predição
+   - Heatmaps sobrepostos nas imagens
+   - Análise de casos corretos e incorretos
+   - Identificação de padrões aprendidos pelo modelo
 
 ---
 
@@ -221,15 +348,24 @@ O projeto implementa duas técnicas de interpretabilidade:
 
 ### Modelos
 
+#### Dados Tabulares
+
 - **Regressão Logística**: Baseline interpretável
 - **Random Forest**: Modelo ensemble com melhor desempenho
+
+#### Classificação de Imagens
+
+- **CNN para Pneumonia**: Arquitetura com 4 blocos convolucionais
+- **CNN para Câncer de Mama**: Arquitetura com 5 blocos convolucionais (escala de cinza)
 
 ### Métricas de Avaliação
 
 - Accuracy, Precision, Recall, F1-Score
 - Matriz de Confusão
-- Feature Importance
-- SHAP Values
+- Curvas ROC e AUC
+- Feature Importance (dados tabulares)
+- SHAP Values (dados tabulares)
+- Grad-CAM (classificação de imagens)
 
 ---
 
