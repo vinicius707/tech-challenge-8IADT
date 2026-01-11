@@ -166,8 +166,10 @@ cd tech-challenge-8IADT
 ### Passo 2: Instalar Dependências
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
+
+**Nota**: Se você receber um erro "command not found: pip", use `pip3` em vez de `pip`. No macOS, o comando geralmente é `pip3`.
 
 **Principais dependências**:
 
@@ -197,6 +199,103 @@ Ou, se preferir JupyterLab:
 ```bash
 jupyter lab
 ```
+
+### Passo 5: Instalar Dependências de Desenvolvimento (Opcional)
+
+Para executar os testes do projeto:
+
+```bash
+pip3 install -r requirements-dev.txt
+```
+
+**Nota**: Se você receber um erro "command not found: pip", use `pip3` em vez de `pip`.
+
+---
+
+## 🧪 Executando Testes
+
+O projeto inclui uma suíte completa de testes seguindo as melhores práticas de mercado.
+
+### Executar Todos os Testes
+
+```bash
+pytest
+```
+
+### Executar Testes com Cobertura
+
+```bash
+pytest --cov=src --cov-report=html
+```
+
+Isso gerará um relatório HTML em `htmlcov/index.html` mostrando a cobertura de código.
+
+### Executar Apenas Testes Unitários
+
+```bash
+pytest tests/unit -m unit
+```
+
+### Executar Apenas Testes de Integração
+
+```bash
+pytest tests/integration -m integration
+```
+
+### Executar Testes Específicos
+
+```bash
+# Testar um módulo específico
+pytest tests/unit/test_tabular_processing.py
+
+# Testar uma classe específica
+pytest tests/unit/test_tabular_processing.py::TestSplitData
+
+# Testar uma função específica
+pytest tests/unit/test_tabular_processing.py::TestSplitData::test_split_data_basic
+```
+
+### Ver Cobertura de Código
+
+```bash
+# Cobertura no terminal
+pytest --cov=src --cov-report=term-missing
+
+# Cobertura em HTML (abre no navegador)
+pytest --cov=src --cov-report=html && open htmlcov/index.html
+```
+
+### Estrutura de Testes
+
+```
+tests/
+├── conftest.py              # Fixtures compartilhadas
+├── unit/                     # Testes unitários
+│   ├── test_tabular_processing.py
+│   ├── test_tabular_evaluate.py
+│   ├── test_vision_data_loader.py
+│   ├── test_vision_preprocessing.py
+│   ├── test_vision_models.py
+│   └── test_vision_evaluation.py
+├── integration/             # Testes de integração
+│   ├── test_tabular_pipeline.py
+│   └── test_vision_pipeline.py
+└── fixtures/                # Dados sintéticos para testes
+    ├── sample_data.py
+    └── sample_images.py
+```
+
+### Cobertura de Testes
+
+Os testes cobrem:
+- ✅ Todas as funções dos módulos `src/tabular/`
+- ✅ Todas as funções dos módulos `src/vision/`
+- ✅ Edge cases e tratamento de erros
+- ✅ Validação de dados de entrada
+- ✅ Testes de integração para pipelines completos
+- ✅ Mocks para operações custosas (downloads, treinamento)
+
+**Meta de cobertura**: 80% ou mais
 
 ---
 
