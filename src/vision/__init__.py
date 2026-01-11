@@ -10,3 +10,4 @@ Este módulo contém funções e classes para:
 
 __version__ = "1.0.0"
 
+

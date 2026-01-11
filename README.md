@@ -427,7 +427,3 @@ Consulte o arquivo `LICENSE` para mais informações.
 ## 📞 Contato
 
 Para dúvidas ou sugestões, abra uma issue no repositório.
-
----
-
-**Desenvolvido com ❤️ para auxiliar profissionais de saúde**

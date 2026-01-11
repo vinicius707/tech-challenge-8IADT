@@ -252,3 +252,4 @@ def get_image_info(df: pd.DataFrame, sample_size: int = 100) -> dict:
     
     return info
 
+
