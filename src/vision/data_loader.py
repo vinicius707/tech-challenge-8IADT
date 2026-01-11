@@ -58,6 +58,146 @@ def download_breast_cancer_dataset(target_path: str = "data/images/breast_cancer
     return path
 
 
+def load_breast_cancer_dataset(base_path: str) -> pd.DataFrame:
+    """
+    Carrega o dataset CBIS-DDSM de câncer de mama.
+    Este dataset tem estrutura diferente: imagens em jpeg/ e labels nos CSVs.
+    
+    Parameters:
+    -----------
+    base_path : str
+        Caminho base do dataset (geralmente do kagglehub cache).
+    
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame com colunas 'image_path', 'label' e 'split'.
+    """
+    base_path = Path(base_path)
+    data = []
+    
+    # Caminhos dos CSVs
+    csv_dir = base_path / "csv"
+    jpeg_dir = base_path / "jpeg"
+    
+    if not csv_dir.exists():
+        raise ValueError(f"Diretório de CSVs não encontrado: {csv_dir}")
+    if not jpeg_dir.exists():
+        raise ValueError(f"Diretório de imagens JPEG não encontrado: {jpeg_dir}")
+    
+    # Lista de CSVs para processar
+    csv_files = [
+        ("mass_case_description_train_set.csv", "train"),
+        ("mass_case_description_test_set.csv", "test"),
+        ("calc_case_description_train_set.csv", "train"),
+        ("calc_case_description_test_set.csv", "test")
+    ]
+    
+    for csv_file, split in csv_files:
+        csv_path = csv_dir / csv_file
+        if not csv_path.exists():
+            continue
+        
+        # Ler CSV
+        df_csv = pd.read_csv(csv_path)
+        
+        # Verificar colunas necessárias
+        if 'pathology' not in df_csv.columns or 'image file path' not in df_csv.columns:
+            continue
+        
+        # Processar cada linha
+        for _, row in df_csv.iterrows():
+            # Obter label (BENIGN ou MALIGNANT)
+            pathology = str(row['pathology']).strip().upper()
+            if pathology not in ['BENIGN', 'MALIGNANT']:
+                continue
+            
+            # Obter caminho da imagem DICOM do CSV
+            dicom_path = str(row['image file path']).strip()
+            if pd.isna(dicom_path) or not dicom_path:
+                continue
+            
+            # Converter caminho DICOM para caminho JPEG
+            # O caminho é algo como: Mass-Training_P_00001_LEFT_CC/1.3.6.1.4.1.9590.100.1.2.422112722213189649807611434612228974994/1.3.6.1.4.1.9590.100.1.2.342386194811267636608694132590482924515/000000.dcm
+            # O último diretório contém o ID DICOM que corresponde ao diretório em jpeg/
+            path_parts = dicom_path.split('/')
+            if len(path_parts) < 2:
+                continue
+            
+            # O último diretório contém o ID DICOM que corresponde ao diretório em jpeg/
+            dicom_dir = path_parts[-2]
+            
+            # Construir caminho do diretório JPEG
+            jpeg_subdir = jpeg_dir / dicom_dir
+            
+            # Procurar qualquer arquivo JPEG neste diretório
+            # (o nome do arquivo JPEG pode ser diferente do DICOM)
+            if jpeg_subdir.exists() and jpeg_subdir.is_dir():
+                jpeg_files = list(jpeg_subdir.glob("*.jpg"))
+                if jpeg_files:
+                    # Usar o primeiro arquivo JPEG encontrado no diretório
+                    # (geralmente há apenas um por diretório)
+                    jpeg_path = jpeg_files[0]
+                    data.append({
+                        'image_path': str(jpeg_path),
+                        'label': pathology,
+                        'split': split
+                    })
+    
+    df = pd.DataFrame(data)
+    
+    if len(df) == 0:
+        raise ValueError(
+            f"Nenhuma imagem encontrada em {base_path}. "
+            f"Verifique se o dataset foi baixado corretamente e se os CSVs estão no diretório csv/."
+        )
+    
+    return df
+
+
+def find_breast_cancer_dataset_path(config_path: Optional[str] = None) -> str:
+    """
+    Tenta encontrar o caminho do dataset de câncer de mama.
+    Primeiro verifica o caminho do config, depois o cache do kagglehub.
+    
+    Parameters:
+    -----------
+    config_path : str, optional
+        Caminho do config.yaml para verificar primeiro.
+    
+    Returns:
+    --------
+    str
+        Caminho para o dataset encontrado.
+    """
+    def _has_images(path: Path) -> bool:
+        """Verifica se um caminho contém imagens do dataset CBIS-DDSM."""
+        csv_dir = path / "csv"
+        jpeg_dir = path / "jpeg"
+        return csv_dir.exists() and jpeg_dir.exists() and len(list(jpeg_dir.glob("**/*.jpg"))) > 0
+    
+    # Se um caminho foi fornecido, verificar se existe e tem imagens
+    if config_path:
+        config_path_obj = Path(config_path)
+        if config_path_obj.exists() and _has_images(config_path_obj):
+            return str(config_path_obj)
+    
+    # Tentar encontrar no cache do kagglehub
+    home = Path.home()
+    kaggle_cache = home / ".cache" / "kagglehub" / "datasets" / "awsaf49" / "cbis-ddsm-breast-cancer-image-dataset"
+    
+    if kaggle_cache.exists():
+        # Procurar por versões (mais recente primeiro)
+        for version_dir in sorted(kaggle_cache.glob("versions/*"), reverse=True):
+            if version_dir.is_dir() and _has_images(version_dir):
+                print(f"Dataset encontrado no cache: {version_dir}")
+                return str(version_dir)
+    
+    # Se não encontrou, fazer download
+    print("Dataset não encontrado. Fazendo download...")
+    return download_breast_cancer_dataset(config_path or "data/images/breast_cancer")
+
+
 def load_image_dataset(
     base_path: str,
     subdirs: Optional[List[str]] = None,
