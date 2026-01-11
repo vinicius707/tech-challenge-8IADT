@@ -109,25 +109,61 @@ def load_image_dataset(
                         'split': subdir
                     })
     
-    # Se não encontrou estrutura train/test/val, procurar diretamente por classes
+    # Se não encontrou estrutura train/test/val, tentar procurar em subdiretórios comuns
     if len(data) == 0:
-        for class_dir in base_path.iterdir():
-            if not class_dir.is_dir():
-                continue
-            
-            label = class_dir.name
-            for img_file in class_dir.iterdir():
-                if img_file.suffix.lower() in image_extensions:
-                    data.append({
-                        'image_path': str(img_file),
-                        'label': label,
-                        'split': 'unknown'
-                    })
+        # Lista de subdiretórios comuns onde datasets podem estar organizados
+        common_subdirs = ['chest_xray', 'chest-xray', 'data', 'images']
+        
+        for common_subdir in common_subdirs:
+            potential_path = base_path / common_subdir
+            if potential_path.exists() and potential_path.is_dir():
+                # Tentar novamente com o subdiretório comum
+                for subdir in subdirs:
+                    subdir_path = potential_path / subdir
+                    if not subdir_path.exists():
+                        continue
+                    
+                    # Procurar por classes (subdiretórios dentro de train/test/val)
+                    for class_dir in subdir_path.iterdir():
+                        if not class_dir.is_dir():
+                            continue
+                        
+                        label = class_dir.name
+                        # Processar imagens no diretório da classe
+                        for img_file in class_dir.iterdir():
+                            if img_file.suffix.lower() in image_extensions:
+                                data.append({
+                                    'image_path': str(img_file),
+                                    'label': label,
+                                    'split': subdir
+                                })
+                
+                # Se encontrou dados, parar de procurar
+                if len(data) > 0:
+                    break
+        
+        # Se ainda não encontrou, procurar diretamente por classes no caminho base
+        if len(data) == 0:
+            for class_dir in base_path.iterdir():
+                if not class_dir.is_dir():
+                    continue
+                
+                label = class_dir.name
+                for img_file in class_dir.iterdir():
+                    if img_file.suffix.lower() in image_extensions:
+                        data.append({
+                            'image_path': str(img_file),
+                            'label': label,
+                            'split': 'unknown'
+                        })
     
     df = pd.DataFrame(data)
     
     if len(df) == 0:
-        raise ValueError(f"Nenhuma imagem encontrada em {base_path}")
+        raise ValueError(
+            f"Nenhuma imagem encontrada em {base_path}. "
+            f"Verifique se o caminho está correto e se o dataset foi baixado corretamente."
+        )
     
     return df
 
