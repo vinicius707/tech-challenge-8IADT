@@ -234,6 +234,11 @@ def grad_cam_visualization(
     if len(img_array.shape) == 3:
         img_array = np.expand_dims(img_array, axis=0)
     
+    # Garantir que o modelo está construído
+    if not model.built:
+        # Fazer uma predição dummy para construir o modelo
+        _ = model.predict(img_array, verbose=0)
+    
     # Encontrar a última camada convolucional
     if layer_name is None:
         for layer in reversed(model.layers):
@@ -245,10 +250,52 @@ def grad_cam_visualization(
         raise ValueError("Nenhuma camada convolucional encontrada no modelo")
     
     # Criar modelo para Grad-CAM
-    grad_model = keras.Model(
-        inputs=model.inputs,
-        outputs=[model.get_layer(layer_name).output, model.output]
-    )
+    # Para modelos Sequential, sempre construir funcionalmente para evitar problemas com model.inputs
+    # Detectar se é Sequential ou tentar usar model.inputs
+    use_functional = isinstance(model, keras.Sequential)
+    
+    if not use_functional:
+        # Tentar usar model.inputs diretamente (funciona para modelos funcionais)
+        try:
+            model_inputs = model.inputs
+            conv_layer = model.get_layer(layer_name)
+            conv_output = conv_layer.output
+            model_output = model.output
+            
+            grad_model = keras.Model(
+                inputs=model_inputs,
+                outputs=[conv_output, model_output]
+            )
+        except (AttributeError, ValueError, TypeError):
+            # Se falhar, usar construção funcional
+            use_functional = True
+    
+    if use_functional:
+        # Construir funcionalmente para modelos Sequential
+        # Obter o shape de entrada
+        if hasattr(model, 'input_shape') and model.input_shape:
+            input_shape = model.input_shape[1:]  # Remover dimensão do batch
+        else:
+            input_shape = img_array.shape[1:]  # Usar shape da imagem
+        
+        # Criar input funcional
+        model_input = keras.Input(shape=input_shape)
+        x = model_input
+        conv_output = None
+        
+        # Iterar pelas camadas para construir o modelo funcionalmente
+        for layer in model.layers:
+            x = layer(x)
+            if layer.name == layer_name:
+                conv_output = x
+        
+        model_output = x
+        
+        if conv_output is None:
+            raise ValueError(f"Camada {layer_name} não encontrada no modelo")
+        
+        # Criar modelo funcional para Grad-CAM
+        grad_model = keras.Model(inputs=model_input, outputs=[conv_output, model_output])
     
     # Calcular gradientes
     with tf.GradientTape() as tape:
