@@ -155,6 +155,150 @@ def load_breast_cancer_dataset(base_path: str) -> pd.DataFrame:
     return df
 
 
+def find_pneumonia_dataset_path(config_path: Optional[str] = None) -> str:
+    """
+    Tenta encontrar o caminho do dataset de pneumonia.
+    Primeiro verifica o caminho do config, depois o cache do kagglehub.
+    
+    Parameters:
+    -----------
+    config_path : str, optional
+        Caminho do config.yaml para verificar primeiro.
+    
+    Returns:
+    --------
+    str
+        Caminho para o dataset encontrado.
+    """
+    def _has_images(path: Path) -> bool:
+        """Verifica se um caminho contém imagens do dataset de pneumonia."""
+        # Verificar se tem estrutura train/test/val com classes
+        train_dir = path / "train"
+        test_dir = path / "test"
+        val_dir = path / "val"
+        
+        # Verificar se pelo menos um dos subdiretórios existe e tem imagens
+        for subdir in [train_dir, test_dir, val_dir]:
+            if subdir.exists():
+                # Verificar se tem subdiretórios de classes
+                class_dirs = [d for d in subdir.iterdir() if d.is_dir()]
+                if class_dirs:
+                    # Verificar se pelo menos uma classe tem imagens
+                    for class_dir in class_dirs:
+                        if len(list(class_dir.glob("*.jpg")) + list(class_dir.glob("*.jpeg")) + list(class_dir.glob("*.png"))) > 0:
+                            return True
+        
+        # Verificar também em subdiretórios comuns (chest_xray, etc)
+        common_subdirs = ['chest_xray', 'chest-xray']
+        for common_subdir in common_subdirs:
+            common_path = path / common_subdir
+            if common_path.exists():
+                for subdir in [common_path / "train", common_path / "test", common_path / "val"]:
+                    if subdir.exists():
+                        class_dirs = [d for d in subdir.iterdir() if d.is_dir()]
+                        if class_dirs:
+                            for class_dir in class_dirs:
+                                if len(list(class_dir.glob("*.jpg")) + list(class_dir.glob("*.jpeg")) + list(class_dir.glob("*.png"))) > 0:
+                                    return True
+        
+        return False
+    
+    # #region agent log
+    import json
+    log_path = Path("/Users/vinicius/Documents/pós/tech-challenge-8IADT/.cursor/debug.log")
+    try:
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "C,E",
+                "location": "data_loader.py:199",
+                "message": "find_pneumonia_dataset_path entry",
+                "data": {"config_path": str(config_path) if config_path else None},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
+    
+    # Se um caminho foi fornecido, verificar se existe e tem imagens
+    if config_path:
+        config_path_obj = Path(config_path)
+        # #region agent log
+        try:
+            with open(log_path, "a") as f:
+                f.write(json.dumps({
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A,B",
+                    "location": "data_loader.py:211",
+                    "message": "checking config_path",
+                    "data": {"config_path": str(config_path_obj), "exists": config_path_obj.exists(), "has_images": _has_images(config_path_obj) if config_path_obj.exists() else False},
+                    "timestamp": int(__import__("time").time() * 1000)
+                }) + "\n")
+        except: pass
+        # #endregion
+        if config_path_obj.exists() and _has_images(config_path_obj):
+            return str(config_path_obj)
+    
+    # Tentar encontrar no cache do kagglehub
+    home = Path.home()
+    kaggle_cache = home / ".cache" / "kagglehub" / "datasets" / "paultimothymooney" / "chest-xray-pneumonia"
+    
+    # #region agent log
+    try:
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "C",
+                "location": "data_loader.py:226",
+                "message": "checking kagglehub cache",
+                "data": {"kaggle_cache": str(kaggle_cache), "exists": kaggle_cache.exists()},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
+    
+    if kaggle_cache.exists():
+        # Procurar por versões (mais recente primeiro)
+        for version_dir in sorted(kaggle_cache.glob("versions/*"), reverse=True):
+            if version_dir.is_dir() and _has_images(version_dir):
+                # #region agent log
+                try:
+                    with open(log_path, "a") as f:
+                        f.write(json.dumps({
+                            "sessionId": "debug-session",
+                            "runId": "run1",
+                            "hypothesisId": "C",
+                            "location": "data_loader.py:235",
+                            "message": "found dataset in kagglehub cache",
+                            "data": {"version_dir": str(version_dir)},
+                            "timestamp": int(__import__("time").time() * 1000)
+                        }) + "\n")
+                except: pass
+                # #endregion
+                print(f"Dataset encontrado no cache: {version_dir}")
+                return str(version_dir)
+    
+    # Se não encontrou, fazer download
+    print("Dataset não encontrado. Fazendo download...")
+    # #region agent log
+    try:
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "E",
+                "location": "data_loader.py:248",
+                "message": "triggering download",
+                "data": {"target_path": str(config_path or "data/images/pneumonia")},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
+    return download_pneumonia_dataset(config_path or "data/images/pneumonia")
+
+
 def find_breast_cancer_dataset_path(config_path: Optional[str] = None) -> str:
     """
     Tenta encontrar o caminho do dataset de câncer de mama.
@@ -221,12 +365,61 @@ def load_image_dataset(
     pd.DataFrame
         DataFrame com colunas 'image_path' e 'label'.
     """
+    # #region agent log
+    import json
+    log_path = Path("/Users/vinicius/Documents/pós/tech-challenge-8IADT/.cursor/debug.log")
+    try:
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "A,B,C",
+                "location": "data_loader.py:224",
+                "message": "load_image_dataset entry",
+                "data": {"base_path": str(base_path), "base_path_exists": str(Path(base_path).exists())},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
     base_path = Path(base_path)
+    
+    # #region agent log
+    try:
+        with open(log_path, "a") as f:
+            resolved_path = base_path.resolve()
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "A,B",
+                "location": "data_loader.py:245",
+                "message": "base_path resolved",
+                "data": {"resolved_path": str(resolved_path), "exists": resolved_path.exists(), "is_dir": resolved_path.is_dir() if resolved_path.exists() else None, "listing": [str(p.name) for p in resolved_path.iterdir()] if resolved_path.exists() and resolved_path.is_dir() else []},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
+    
     data = []
     
     # Se subdirs não for especificado, procurar por subdiretórios comuns
     if subdirs is None:
         subdirs = ['train', 'test', 'val', 'validation']
+    
+    # #region agent log
+    try:
+        with open(log_path, "a") as f:
+            found_subdirs = [sd for sd in subdirs if (base_path / sd).exists()]
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "D",
+                "location": "data_loader.py:256",
+                "message": "checking subdirs",
+                "data": {"subdirs_checked": subdirs, "found_subdirs": found_subdirs},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
     
     # Processar cada subdiretório
     for subdir in subdirs:
@@ -249,10 +442,41 @@ def load_image_dataset(
                         'split': subdir
                     })
     
+    # #region agent log
+    try:
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "D",
+                "location": "data_loader.py:275",
+                "message": "after first search, checking common subdirs",
+                "data": {"data_found": len(data), "base_path_contents": [str(p.name) for p in base_path.iterdir()] if base_path.exists() and base_path.is_dir() else []},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
+    
     # Se não encontrou estrutura train/test/val, tentar procurar em subdiretórios comuns
     if len(data) == 0:
         # Lista de subdiretórios comuns onde datasets podem estar organizados
         common_subdirs = ['chest_xray', 'chest-xray', 'data', 'images']
+        
+        # #region agent log
+        try:
+            with open(log_path, "a") as f:
+                found_common = [csd for csd in common_subdirs if (base_path / csd).exists()]
+                f.write(json.dumps({
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "D",
+                    "location": "data_loader.py:283",
+                    "message": "checking common subdirs",
+                    "data": {"common_subdirs": common_subdirs, "found_common": found_common},
+                    "timestamp": int(__import__("time").time() * 1000)
+                }) + "\n")
+        except: pass
+        # #endregion
         
         for common_subdir in common_subdirs:
             potential_path = base_path / common_subdir
@@ -298,6 +522,21 @@ def load_image_dataset(
                         })
     
     df = pd.DataFrame(data)
+    
+    # #region agent log
+    try:
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "A,B,C,D,E",
+                "location": "data_loader.py:324",
+                "message": "load_image_dataset exit",
+                "data": {"data_count": len(data), "df_length": len(df), "base_path": str(base_path)},
+                "timestamp": int(__import__("time").time() * 1000)
+            }) + "\n")
+    except: pass
+    # #endregion
     
     if len(df) == 0:
         raise ValueError(
