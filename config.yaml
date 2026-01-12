@@ -1,5 +1,7 @@
 data:
-  tabular_path: "data/tabular/breast-cancer.csv"
+  tabular:
+    breast_cancer_path: "data/tabular/breast-cancer.csv"
+    diabetes_path: "data/tabular/diabetes.csv"
   images:
     pneumonia_path: "data/images/pneumonia"
     breast_cancer_path: "data/images/breast_cancer"
@@ -15,6 +17,9 @@ models:
   random_forest:
     n_estimators: 100
     max_depth: 10
+  knn:
+    n_neighbors: 5
+    weights: "uniform"
   cnn:
     image_size:
       pneumonia: [224, 224]
